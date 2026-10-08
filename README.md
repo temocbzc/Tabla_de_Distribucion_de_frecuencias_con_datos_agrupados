@@ -111,6 +111,24 @@ Los datos se procesan **solo en el navegador** del usuario. No se envían ni se 
 
 ---
 
+## Actividad: ¿Qué tan limpio es el aire que respiramos en Azcapotzalco?
+
+🔗 **Abrir la actividad:** https://temocbzc.github.io/Tabla_de_Distribucion_de_frecuencias_con_datos_agrupados/calidad-aire/
+
+Secuencia didáctica para trabajar **solo con el celular**. Los alumnos:
+
+1. Investigan qué son las partículas **PM2.5**, sus fuentes, sus efectos en la salud y los límites de la **NOM-025-SSA1-2021** y de la **OMS** (pueden apoyarse en IA, verificando en fuentes oficiales).
+2. Construyen la tabla de datos agrupados con la **regla de Sturges** usando datos **reales** de 2024 de la estación **Camarones (CAM)**, en Azcapotzalco.
+3. Construyen **su propia tabla** eligiendo *k* y *A*, con el reto de que uno de los límites sea el valor de la norma (33 µg/m³).
+4. Comparan con la estación **CCA** (Ciudad Universitaria) usando frecuencias relativas.
+5. Descargan **un solo PDF** con su nombre, grupo, respuestas y las tres tablas, listo para entregar.
+
+Las respuestas se guardan en el propio celular mientras trabajan.
+
+**Datos:** promedios diarios de PM2.5 del Sistema de Monitoreo Atmosférico de la Ciudad de México ([SIMAT](https://aire.cdmx.gob.mx)), 2024. En la carpeta `calidad-aire/` están los CSV de ambas estaciones, con y sin fechas.
+
+---
+
 ## Actividades sugeridas para el aula
 
 1. **Construir a mano y verificar.** Calcular $R$, $k$ y $A$ en el cuaderno, construir la tabla y comprobarla con la herramienta. El apartado *Ver datos ordenados* ayuda a contar los datos de cada intervalo.
@@ -129,6 +147,7 @@ Los datos se procesan **solo en el navegador** del usuario. No se envían ni se 
 |---|:---:|
 | [Distribución de frecuencias, datos no agrupados](https://temocbzc.github.io/Tabla_de_Distribucion_de_frecuencias_sin_datos_agrupados/) | ✅ Disponible |
 | Distribución de frecuencias, datos agrupados | ✅ Disponible |
+| [Actividad: calidad del aire en la CDMX (datos agrupados)](https://temocbzc.github.io/Tabla_de_Distribucion_de_frecuencias_con_datos_agrupados/calidad-aire/) | ✅ Disponible |
 | Gráficas: barras, circular, histograma, polígono de frecuencias, ojiva | 🔜 Planeado |
 | Medidas de tendencia central, dispersión y posición | 🔜 Planeado |
 | Datos bivariados: tablas de contingencia, correlación y regresión | 🔜 Planeado |
@@ -143,6 +162,8 @@ Los datos se procesan **solo en el navegador** del usuario. No se envían ni se 
 |---|---|
 | `index.html` | Herramienta web (un solo archivo, sin dependencias que instalar) |
 | `ejemplo_estaturas.csv` | 50 estaturas de ejemplo para probar la herramienta |
+| `calidad-aire/index.html` | Actividad de calidad del aire (PM2.5) con entrega en PDF |
+| `calidad-aire/pm25_*.csv` | Datos de PM2.5 2024 de las estaciones Camarones (CAM) y CCA |
 
 ---
 

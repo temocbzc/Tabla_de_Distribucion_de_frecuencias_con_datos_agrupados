@@ -1,0 +1,604 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tabla de Datos Agrupados</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,600;1,8..60,400;1,8..60,600&display=swap">
+<style>
+  :root {
+    --navy: #1F3864;
+    --ink: #1B2433;
+    --muted: #5A6578;
+    --paper: #F4F6FA;
+    --surface: #FFFFFF;
+    --line: #C9D3E3;
+    --zebra: #EEF2F8;
+    --total: #D6DEEB;
+    --head-text: #FFFFFF;
+    --focus: #3B6FD6;
+    --warn-bg: #FFF4E0;
+    --warn-ink: #7A4B00;
+    --ok-bg: #E6F3EA;
+    --ok-ink: #1E5B32;
+    --sans: "Source Sans 3", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --navy: #8FB0E8; --ink: #E4E9F2; --muted: #A3AEC2; --paper: #121722; --surface: #1A2130;
+      --line: #33405A; --zebra: #1F2839; --total: #2A3650; --head-text: #0F1420; --focus: #8FB0E8;
+      --warn-bg: #3A2C12; --warn-ink: #F3D39A; --ok-bg: #16301F; --ok-ink: #A8DDB8;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --navy: #8FB0E8; --ink: #E4E9F2; --muted: #A3AEC2; --paper: #121722; --surface: #1A2130;
+    --line: #33405A; --zebra: #1F2839; --total: #2A3650; --head-text: #0F1420; --focus: #8FB0E8;
+    --warn-bg: #3A2C12; --warn-ink: #F3D39A; --ok-bg: #16301F; --ok-ink: #A8DDB8;
+  }
+
+  body { background: var(--paper); color: var(--ink); font-family: var(--sans); font-size: 16px; line-height: 1.5; }
+  .wrap { max-width: 1140px; margin: 0 auto; padding-inline: 16px; padding-block: 24px 48px; display: grid; gap: 22px; }
+  header h1 {
+    font-family: var(--serif); font-weight: 600; font-size: clamp(1.6rem, 4vw, 2.3rem);
+    line-height: 1.15; color: var(--navy); margin: 0 0 6px; text-wrap: balance;
+  }
+  header p { margin: 0; color: var(--muted); max-width: 62ch; }
+
+  .layout { display: grid; grid-template-columns: minmax(0, 350px) minmax(0, 1fr); gap: 22px; align-items: start; }
+  @media (max-width: 860px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+
+  .panel, .sheet {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+    padding: 18px; display: grid; gap: 14px; min-width: 0;
+  }
+  .label-sec {
+    font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--muted); margin: 0; font-weight: 700;
+  }
+  .field { display: grid; gap: 6px; }
+  label { font-weight: 600; font-size: 0.95rem; }
+  .hint { font-size: 0.85rem; color: var(--muted); margin: 0; }
+  input[type="text"], input[type="number"], textarea {
+    font: inherit; color: var(--ink); background: var(--paper);
+    border: 1px solid var(--line); border-radius: 6px; padding: 9px 10px; width: 100%; box-sizing: border-box;
+  }
+  textarea { min-height: 110px; resize: vertical; font-variant-numeric: tabular-nums; }
+  input:focus-visible, textarea:focus-visible, button:focus-visible, .file-btn:focus-within, .modo label:focus-within {
+    outline: 2px solid var(--focus); outline-offset: 2px;
+  }
+  .or { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 0.85rem; }
+  .or::before, .or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+  .file-btn {
+    display: inline-flex; align-items: center; justify-content: center; border: 1px dashed var(--navy);
+    color: var(--navy); border-radius: 6px; padding: 12px; font-weight: 600; cursor: pointer; text-align: center;
+  }
+  .file-btn input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .file-name { font-size: 0.85rem; color: var(--muted); margin: 0; overflow-wrap: anywhere; }
+
+  .modo { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .modo label {
+    display: flex; align-items: center; justify-content: center; gap: 6px; text-align: center;
+    border: 1px solid var(--line); border-radius: 6px; padding: 10px 8px; cursor: pointer;
+    font-size: 0.9rem; line-height: 1.25; background: var(--paper);
+  }
+  .modo input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .modo label:has(input:checked) { border-color: var(--navy); background: var(--navy); color: var(--head-text); }
+  .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  button { font: inherit; font-weight: 700; border-radius: 6px; padding: 11px 16px; cursor: pointer; border: 1px solid var(--navy); }
+  .primary { background: var(--navy); color: var(--head-text); }
+  .actions { display: flex; flex-wrap: wrap; gap: 10px; }
+  .msg { border-radius: 6px; padding: 10px 12px; font-size: 0.92rem; margin: 0; }
+  .msg.warn { background: var(--warn-bg); color: var(--warn-ink); }
+  .msg.ok { background: var(--ok-bg); color: var(--ok-ink); }
+
+  .result { display: grid; gap: 18px; min-width: 0; }
+
+  /* Pasos */
+  .pasos { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; counter-reset: paso; }
+  .pasos li {
+    counter-increment: paso; display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 10px;
+    align-items: start; padding-bottom: 10px; border-bottom: 1px solid var(--line);
+  }
+  .pasos li:last-child { border-bottom: 0; padding-bottom: 0; }
+  .pasos li::before {
+    content: counter(paso); width: 26px; height: 26px; border-radius: 50%; background: var(--navy);
+    color: var(--head-text); font-weight: 700; font-size: 0.85rem; display: grid; place-items: center;
+  }
+  .pasos h4 { margin: 0 0 2px; font-size: 0.98rem; }
+  .formula { font-family: var(--serif); font-size: 1.05rem; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+  .formula b { font-family: var(--sans); color: var(--navy); }
+  .sym { font-family: var(--serif); font-style: italic; font-weight: 400; }
+  .sym sub { font-size: 0.7em; }
+
+  /* Tabla */
+  .sheet h3 {
+    font-family: var(--serif); font-weight: 600; font-size: 1.3rem; color: var(--navy);
+    text-align: center; margin: 0; text-wrap: balance;
+  }
+  .varname-line { text-align: center; margin: -8px 0 0; color: var(--muted); font-size: 0.95rem; }
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  th, td { border: 1px solid var(--line); padding: 7px 8px; text-align: center; white-space: nowrap; }
+  thead th { background: var(--navy); color: var(--head-text); font-weight: 700; vertical-align: middle; }
+  thead .sym { font-size: 1.12em; }
+  thead small { display: block; font-weight: 600; font-size: 0.72rem; opacity: 0.9; }
+  tbody tr:nth-child(even) td { background: var(--zebra); }
+  tbody tr.total td { background: var(--total); font-weight: 700; }
+  td.li { text-align: left; padding-left: 10px; }
+  td.ls { text-align: right; padding-right: 10px; }
+  .br { color: var(--navy); font-weight: 700; font-size: 1.1em; }
+  .foot { text-align: center; color: var(--muted); font-style: italic; font-size: 0.9rem; margin: 0; }
+  .nota { font-size: 0.85rem; color: var(--muted); margin: 0; }
+
+  details { border-top: 1px solid var(--line); padding-top: 10px; }
+  summary { cursor: pointer; font-weight: 600; color: var(--navy); }
+  .ordenados { font-variant-numeric: tabular-nums; font-size: 0.92rem; margin: 8px 0 0; overflow-wrap: anywhere; }
+
+  .preview img { border: 1px solid var(--line); border-radius: 6px; background: #fff; width: 100%; height: auto; }
+
+  @media (max-width: 560px) {
+    .panel, .sheet { padding: 14px 10px; }
+    .sheet .scroll { margin-inline: -4px; }
+    table { font-size: 0.72rem; }
+    th, td { padding: 5px 2px; }
+    td.li { padding-left: 3px; } td.ls { padding-right: 3px; }
+    thead small { font-size: 0.56rem; }
+    .br { font-size: 1em; }
+  }
+  @media (prefers-reduced-motion: no-preference) { button { transition: filter .15s; } button:hover { filter: brightness(1.1); } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>Tabla de distribución de frecuencias para datos agrupados</h1>
+    <p>Sube un archivo CSV o escribe tus datos. La página calcula el rango, el número de clases con la regla de Sturges y la amplitud, o te deja elegirlos a ti.</p>
+  </header>
+
+  <div class="layout">
+    <section class="panel" aria-labelledby="t-datos">
+      <h2 class="label-sec" id="t-datos">Datos de la muestra</h2>
+
+      <div class="field">
+        <label class="file-btn" for="archivo">
+          Subir archivo CSV
+          <input type="file" id="archivo" accept=".csv,text/csv,text/plain">
+        </label>
+        <p class="file-name" id="nombreArchivo">La celda A1 es el nombre de la variable y los datos van debajo, uno por celda.</p>
+      </div>
+
+      <div class="or">o escríbelos aquí</div>
+
+      <div class="field">
+        <label for="variable">Nombre de la variable</label>
+        <input type="text" id="variable" value="Estatura (m)">
+      </div>
+      <div class="field">
+        <label for="datos">Datos</label>
+        <textarea id="datos" spellcheck="false" inputmode="decimal">1.61, 1.67, 1.61, 1.60, 1.56, 1.61, 1.72, 1.66, 1.71, 1.65, 1.66, 1.64, 1.50, 1.70, 1.67, 1.67, 1.49, 1.49, 1.56, 1.59, 1.65, 1.63, 1.67, 1.58, 1.65, 1.66, 1.58, 1.77, 1.67, 1.73, 1.58, 1.57, 1.60, 1.62, 1.68, 1.65, 1.59, 1.55, 1.59, 1.73, 1.57, 1.65, 1.66, 1.51, 1.63, 1.73, 1.47, 1.60, 1.62, 1.56</textarea>
+        <p class="hint">Sepáralos con comas, espacios o saltos de línea. Usa punto decimal (1.65) y escribe todos con los mismos decimales.</p>
+      </div>
+
+      <h2 class="label-sec">Clases e intervalos</h2>
+      <div class="modo" role="radiogroup" aria-label="Forma de calcular las clases">
+        <label><input type="radio" name="modo" id="modoSturges" value="sturges" checked> Regla de Sturges</label>
+        <label><input type="radio" name="modo" id="modoPropio" value="propio"> Elegir <i>k</i> y <i>A</i></label>
+      </div>
+      <div class="duo" id="camposPropios" hidden>
+        <div class="field">
+          <label for="kPropio">Número de clases <span class="sym">k</span></label>
+          <input type="number" id="kPropio" min="1" max="50" step="1" inputmode="numeric">
+        </div>
+        <div class="field">
+          <label for="aPropio">Amplitud <span class="sym">A</span></label>
+          <input type="text" id="aPropio" inputmode="decimal">
+        </div>
+      </div>
+      <p class="hint" id="hintPropio" hidden>El primer límite inferior siempre es el dato menor. Comprueba que tus intervalos alcancen al dato mayor.</p>
+
+      <div class="field">
+        <label for="titulo">Título de la tabla</label>
+        <input type="text" id="titulo" value="Tabla de distribución de frecuencias">
+      </div>
+
+      <div class="actions">
+        <button type="button" class="primary" id="calcular">Construir tabla</button>
+      </div>
+      <p class="msg warn" id="mensaje" hidden></p>
+    </section>
+
+    <section class="result" aria-live="polite">
+      <div class="sheet">
+        <h2 class="label-sec">Cálculos paso a paso</h2>
+        <ol class="pasos" id="pasos"></ol>
+      </div>
+
+      <div class="sheet">
+        <h3 id="tituloTabla">Tabla de distribución de frecuencias</h3>
+        <p class="varname-line" id="lineaVariable"></p>
+        <div class="scroll">
+          <table id="tabla">
+            <thead>
+              <tr>
+                <th rowspan="2"><span class="sym">i</span><small>Clase</small></th>
+                <th colspan="2">Intervalos de clase</th>
+                <th rowspan="2"><span class="sym">x<sub>i</sub></span><small>Marca de<br>clase</small></th>
+                <th rowspan="2"><span class="sym">f<sub>i</sub></span></th>
+                <th rowspan="2"><span class="sym">fr<sub>i</sub></span> %</th>
+                <th rowspan="2"><span class="sym">F<sub>i</sub></span></th>
+                <th rowspan="2"><span class="sym">Fr<sub>i</sub></span> %</th>
+              </tr>
+              <tr>
+                <th><span class="sym">LI<sub>i</sub></span></th>
+                <th><span class="sym">LS<sub>i</sub></span></th>
+              </tr>
+            </thead>
+            <tbody id="cuerpo"></tbody>
+          </table>
+        </div>
+        <p class="nota"><b>[</b> significa que el límite se incluye (cerrado) y <b>)</b> que no se incluye (abierto). El último intervalo es cerrado en ambos lados <b>[ ]</b>.</p>
+        <p class="foot" id="pie"></p>
+        <div class="actions">
+          <button type="button" class="primary" id="descargar">Descargar JPG</button>
+        </div>
+        <details>
+          <summary>Ver datos ordenados de menor a mayor</summary>
+          <p class="ordenados" id="ordenados"></p>
+        </details>
+      </div>
+
+      <div class="sheet preview">
+        <h2 class="label-sec">Imagen JPG</h2>
+        <p class="hint">Si la descarga no inicia, mantén presionada la imagen (celular) o da clic derecho (computadora) y elige “Guardar imagen”.</p>
+        <img id="vista" alt="Vista previa de la tabla en formato JPG">
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  let ultimo = null;
+
+  // ---------- Utilidades numéricas (se trabaja con enteros escalados para evitar errores de redondeo) ----------
+  const decimalesDe = (txt) => { const p = String(txt).split("."); return p.length > 1 ? p[1].length : 0; };
+  const fmt = (entero, escala, dec) => (entero / escala).toFixed(dec);
+  const dos = (v) => v.toFixed(2);
+
+  // ---------- Lectura de datos ----------
+  // Cada dato se guarda como texto (para contar decimales) y como número
+  function leerTexto(texto) {
+    return texto.split(/[\s,;]+/).map(t => t.trim()).filter(t => t !== "");
+  }
+  function leerCSV(texto) {
+    const renglones = texto.replace(/^﻿/, "").split(/\r?\n/).filter(r => r.trim() !== "");
+    if (renglones.length < 2) throw new Error("El archivo necesita el nombre de la variable en A1 y al menos un dato debajo.");
+    const sep = renglones[0].includes(";") ? ";" : ",";
+    const celda = (r) => r.split(sep)[0].replace(/^"|"$/g, "").trim();
+    const nombre = celda(renglones[0]);
+    const datos = renglones.slice(1).map(r => {
+      let c = celda(r);
+      if (sep === ";") c = c.replace(",", ".");
+      return c;
+    }).filter(c => c !== "");
+    return { nombre, datos };
+  }
+
+  // ---------- Cálculo ----------
+  function calcular(textos, modo, kTxt, aTxt) {
+    const malos = textos.filter(t => !Number.isFinite(Number(t)));
+    if (malos.length) throw new Error(`Estos datos no son números: ${malos.slice(0, 5).join(", ")}. Corrígelos y vuelve a intentar.`);
+    const n = textos.length;
+    if (n < 2) throw new Error("Se necesitan al menos 2 datos.");
+    const dDatos = Math.max(...textos.map(decimalesDe));
+
+    let k, aTexto, d, metodo;
+    if (modo === "propio") {
+      k = parseInt(kTxt, 10);
+      if (!Number.isInteger(k) || k < 1 || k > 50) throw new Error("Escribe un número de clases k entero entre 1 y 50.");
+      aTexto = String(aTxt).trim().replace(",", ".");
+      if (!(Number(aTexto) > 0)) throw new Error("Escribe una amplitud A mayor que 0.");
+      d = Math.max(dDatos, decimalesDe(aTexto));
+      metodo = "propio";
+    } else {
+      d = dDatos;
+      metodo = "sturges";
+    }
+    const s = Math.pow(10, d);
+    const vals = textos.map(t => Math.round(Number(t) * s)).sort((a, b) => a - b);
+    const min = vals[0], max = vals[n - 1];
+    const R = max - min;
+    if (R === 0) throw new Error("Todos los datos son iguales (el rango es 0). Para agrupar se necesitan datos distintos.");
+
+    const kSturgesExacto = 1 + 3.322 * Math.log10(n);
+    const kSturges = Math.ceil(kSturgesExacto - 1e-9);
+    let A;
+    if (metodo === "sturges") {
+      k = kSturges;
+      A = Math.ceil(R / k - 1e-9);           // amplitud hacia arriba con los decimales de los datos
+      if (A < 1) A = 1;
+    } else {
+      A = Math.round(Number(aTexto) * s);
+    }
+
+    // Intervalos: [LI, LS) y el último [LI, LS]
+    const clases = [];
+    for (let i = 0; i < k; i++) clases.push({ i: i + 1, LI: min + i * A, LS: min + (i + 1) * A, f: 0 });
+    let fuera = 0;
+    vals.forEach(v => {
+      let idx = Math.floor((v - min) / A);
+      if (idx === k && v === clases[k - 1].LS) idx = k - 1;
+      if (idx >= 0 && idx < k) clases[idx].f++; else fuera++;
+    });
+    let F = 0, Fr = 0;
+    clases.forEach(c => { c.fr = c.f / n * 100; F += c.f; Fr += c.fr; c.F = F; c.Fr = Fr; });
+
+    return { n, d, s, dDatos, vals, min, max, R, k, A, kSturgesExacto, kSturges, metodo, clases, fuera };
+  }
+
+  // Texto de marca de clase: (LI + LS) / 2, con un decimal extra si hace falta
+  function marca(c, r) {
+    const doble = c.LI + c.LS;               // = 2 * marca, en enteros escalados
+    const dec = doble % 2 === 0 ? r.d : r.d + 1;
+    return (doble / 2 / r.s).toFixed(dec);
+  }
+
+  // ---------- Pasos ----------
+  function pintarPasos(r) {
+    const F = (v) => fmt(v, r.s, r.d);
+    const items = [];
+    items.push(`<h4>Rango de la muestra</h4>
+      <div class="formula"><span class="sym">R</span> = <span class="sym">x</span><sub>máx</sub> − <span class="sym">x</span><sub>mín</sub> = ${F(r.max)} − ${F(r.min)} = <b>${F(r.R)}</b></div>`);
+    if (r.metodo === "sturges") {
+      items.push(`<h4>Número de clases (regla de Sturges)</h4>
+        <div class="formula"><span class="sym">k</span> = 1 + 3.322 log(<span class="sym">n</span>) = 1 + 3.322 log(${r.n}) = ${r.kSturgesExacto.toFixed(2)} → <b><span class="sym">k</span> = ${r.k}</b></div>
+        <p class="hint">${Number.isInteger(Number(r.kSturgesExacto.toFixed(6))) ? "El resultado es entero." : "Como no es entero, se aproxima al entero siguiente."}</p>`);
+      items.push(`<h4>Amplitud de los intervalos</h4>
+        <div class="formula"><span class="sym">A</span> = <span class="sym">R</span> / <span class="sym">k</span> = ${F(r.R)} / ${r.k} = ${(r.R / r.s / r.k).toFixed(r.d + 3)} → <b><span class="sym">A</span> = ${F(r.A)}</b></div>
+        <p class="hint">Los datos tienen ${r.d} ${r.d === 1 ? "decimal" : "decimales"}, así que <i>A</i> se aproxima hacia arriba con ${r.d} ${r.d === 1 ? "decimal" : "decimales"}. Así los intervalos alcanzan a todos los datos.</p>`);
+    } else {
+      items.push(`<h4>Número de clases (elegido)</h4>
+        <div class="formula"><b><span class="sym">k</span> = ${r.k}</b></div>
+        <p class="hint">Con la regla de Sturges sería <i>k</i> = ${r.kSturges} (1 + 3.322 log(${r.n}) = ${r.kSturgesExacto.toFixed(2)}).</p>`);
+      items.push(`<h4>Amplitud de los intervalos (elegida)</h4>
+        <div class="formula"><b><span class="sym">A</span> = ${F(r.A)}</b></div>
+        <p class="hint">Como referencia, <i>R</i> / <i>k</i> = ${F(r.R)} / ${r.k} = ${(r.R / r.s / r.k).toFixed(r.d + 3)}.</p>`);
+    }
+    const ultimoLS = r.clases[r.k - 1].LS;
+    items.push(`<h4>Límites de los intervalos</h4>
+      <div class="formula"><span class="sym">LI</span><sub>1</sub> = <span class="sym">x</span><sub>mín</sub> = <b>${F(r.min)}</b>; cada límite se obtiene sumando <span class="sym">A</span> = ${F(r.A)}</div>
+      <p class="hint">Último límite superior: ${F(r.min)} + ${r.k} × ${F(r.A)} = ${F(ultimoLS)}${ultimoLS >= r.max ? `, que sí alcanza al dato mayor (${F(r.max)}).` : `, que <b>no</b> alcanza al dato mayor (${F(r.max)}).`}</p>`);
+    $("pasos").innerHTML = items.map(t => `<li><div>${t}</div></li>`).join("");
+  }
+
+  // ---------- Tabla en pantalla ----------
+  function pintarTabla(r, nombre, titulo) {
+    const F = (v) => fmt(v, r.s, r.d);
+    $("tituloTabla").textContent = titulo;
+    $("lineaVariable").textContent = "Variable: " + nombre;
+    const cuerpo = $("cuerpo");
+    cuerpo.innerHTML = "";
+    r.clases.forEach((c, j) => {
+      const ultimoInt = j === r.k - 1;
+      const tr = document.createElement("tr");
+      tr.innerHTML =
+        `<td>${c.i}</td>` +
+        `<td class="li"><span class="br">[</span> ${F(c.LI)}</td>` +
+        `<td class="ls">${F(c.LS)} <span class="br">${ultimoInt ? "]" : ")"}</span></td>` +
+        `<td>${marca(c, r)}</td><td>${c.f}</td><td>${dos(c.fr)}</td><td>${c.F}</td><td>${dos(c.Fr)}</td>`;
+      cuerpo.appendChild(tr);
+    });
+    const sumaF = r.clases.reduce((a, c) => a + c.f, 0);
+    const sumaFr = r.clases.reduce((a, c) => a + c.fr, 0);
+    const tot = document.createElement("tr");
+    tot.className = "total";
+    tot.innerHTML = `<td></td><td colspan="3">Total</td><td>${sumaF}</td><td>${dos(sumaFr)}</td><td></td><td></td>`;
+    cuerpo.appendChild(tot);
+    $("pie").textContent = `n = ${r.n}   |   R = ${F(r.R)}   |   k = ${r.k}   |   A = ${F(r.A)}`;
+    $("ordenados").textContent = r.vals.map(v => F(v)).join(", ");
+  }
+
+  // ---------- Imagen JPG ----------
+  const C = {
+    navy: "#1F3864", ink: "#1B2433", line: "#B7C3D6", zebra: "#EEF2F8", total: "#D6DEEB", muted: "#555555",
+    sans: '"Source Sans 3", "Segoe UI", Roboto, Arial, sans-serif',
+    serif: '"Source Serif 4", Georgia, "Times New Roman", serif'
+  };
+  function simbolo(ctx, base, sub, extra, cx, cy, tam = 21) {
+    const fB = `italic 400 ${tam}px ${C.serif}`, fS = `italic 400 ${Math.round(tam * 0.68)}px ${C.serif}`, fE = `700 ${tam - 3}px ${C.sans}`;
+    ctx.font = fB; const wB = ctx.measureText(base).width;
+    ctx.font = fS; const wS = sub ? ctx.measureText(sub).width + 1 : 0;
+    ctx.font = fE; const wE = extra ? ctx.measureText(extra).width : 0;
+    let x = cx - (wB + wS + wE) / 2;
+    ctx.textAlign = "left"; ctx.textBaseline = "middle";
+    ctx.font = fB; ctx.fillText(base, x, cy); x += wB;
+    if (sub) { ctx.font = fS; ctx.fillText(sub, x + 1, cy + 6); x += wS; }
+    if (extra) { ctx.font = fE; ctx.fillText(extra, x, cy); }
+  }
+
+  function dibujar(r, nombre, titulo) {
+    const F = (v) => fmt(v, r.s, r.d);
+    const escala = 3, margen = 36;
+    const anchos = [54, 104, 104, 112, 70, 92, 70, 92];
+    const W0 = anchos.reduce((a, b) => a + b, 0), W = W0 + margen * 2;
+    const altoTitulo = 78, enc1 = 34, enc2 = 40, altoFila = 34;
+    const filas = r.clases.length + 1, altoPie = 58;
+    const H = margen + altoTitulo + enc1 + enc2 + altoFila * filas + altoPie;
+    const cv = document.createElement("canvas");
+    cv.width = W * escala; cv.height = H * escala;
+    const ctx = cv.getContext("2d");
+    ctx.scale(escala, escala);
+    ctx.fillStyle = "#FFFFFF"; ctx.fillRect(0, 0, W, H);
+
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillStyle = C.navy; ctx.font = `600 25px ${C.serif}`;
+    ctx.fillText(titulo, W / 2, margen + 14);
+    ctx.fillStyle = C.muted; ctx.font = `400 15px ${C.sans}`;
+    ctx.fillText("Variable: " + nombre, W / 2, margen + 44);
+
+    const x0 = margen, y0 = margen + altoTitulo;
+    const xs = [x0]; anchos.forEach(a => xs.push(xs[xs.length - 1] + a));
+    const cx = anchos.map((a, k) => xs[k] + a / 2);
+    const yH = y0 + enc1 + enc2;
+
+    // Encabezado
+    ctx.fillStyle = C.navy; ctx.fillRect(x0, y0, W0, enc1 + enc2);
+    ctx.fillStyle = "#FFFFFF";
+    const cyAll = y0 + (enc1 + enc2) / 2;
+    simbolo(ctx, "i", "", "", cx[0], cyAll - 7);
+    ctx.font = `600 11px ${C.sans}`; ctx.textAlign = "center"; ctx.fillText("Clase", cx[0], cyAll + 15);
+    ctx.font = `700 15px ${C.sans}`; ctx.fillText("Intervalos de clase", (xs[1] + xs[3]) / 2, y0 + enc1 / 2);
+    simbolo(ctx, "LI", "i", "", cx[1], y0 + enc1 + enc2 / 2);
+    simbolo(ctx, "LS", "i", "", cx[2], y0 + enc1 + enc2 / 2);
+    simbolo(ctx, "x", "i", "", cx[3], cyAll - 7);
+    ctx.font = `600 11px ${C.sans}`; ctx.textAlign = "center"; ctx.fillText("Marca de clase", cx[3], cyAll + 15);
+    simbolo(ctx, "f", "i", "", cx[4], cyAll);
+    simbolo(ctx, "fr", "i", " %", cx[5], cyAll);
+    simbolo(ctx, "F", "i", "", cx[6], cyAll);
+    simbolo(ctx, "Fr", "i", " %", cx[7], cyAll);
+
+    // Filas
+    r.clases.forEach((c, j) => {
+      const y = yH + j * altoFila, cy = y + altoFila / 2 + 1;
+      ctx.fillStyle = j % 2 === 1 ? C.zebra : "#FFFFFF"; ctx.fillRect(x0, y, W0, altoFila);
+      ctx.fillStyle = C.ink; ctx.font = `400 16px ${C.sans}`; ctx.textBaseline = "middle";
+      ctx.textAlign = "center";
+      [String(c.i), null, null, marca(c, r), String(c.f), dos(c.fr), String(c.F), dos(c.Fr)].forEach((t, col) => {
+        if (t !== null) ctx.fillText(t, cx[col], cy);
+      });
+      // LI con corchete
+      ctx.textAlign = "left"; ctx.fillStyle = C.navy; ctx.font = `700 17px ${C.sans}`;
+      ctx.fillText("[", xs[1] + 10, cy);
+      ctx.fillStyle = C.ink; ctx.font = `400 16px ${C.sans}`; ctx.textAlign = "right";
+      ctx.fillText(F(c.LI), xs[2] - 14, cy);
+      // LS con paréntesis o corchete
+      ctx.textAlign = "left"; ctx.fillText(F(c.LS), xs[2] + 14, cy);
+      ctx.textAlign = "right"; ctx.fillStyle = C.navy; ctx.font = `700 17px ${C.sans}`;
+      ctx.fillText(j === r.k - 1 ? "]" : ")", xs[3] - 10, cy);
+    });
+    const yT = yH + r.clases.length * altoFila;
+    ctx.fillStyle = C.total; ctx.fillRect(x0, yT, W0, altoFila);
+    ctx.fillStyle = C.ink; ctx.font = `700 16px ${C.sans}`; ctx.textAlign = "center";
+    const sumaF = r.clases.reduce((a, c) => a + c.f, 0), sumaFr = r.clases.reduce((a, c) => a + c.fr, 0);
+    ctx.fillText("Total", (xs[1] + xs[4]) / 2, yT + altoFila / 2 + 1);
+    ctx.fillText(String(sumaF), cx[4], yT + altoFila / 2 + 1);
+    ctx.fillText(dos(sumaFr), cx[5], yT + altoFila / 2 + 1);
+
+    // Cuadrícula
+    const yFin = yT + altoFila;
+    ctx.strokeStyle = C.line; ctx.lineWidth = 1; ctx.beginPath();
+    xs.forEach((x, k) => {
+      if (k === 2) { ctx.moveTo(x, y0 + enc1); ctx.lineTo(x, yFin); }   // separador LI | LS bajo el título común
+      else if (k === 3 || k === 1) { ctx.moveTo(x, y0); ctx.lineTo(x, yFin); }
+      else { ctx.moveTo(x, y0); ctx.lineTo(x, yFin); }
+    });
+    ctx.moveTo(x0, y0); ctx.lineTo(x0 + W0, y0);
+    ctx.moveTo(xs[1], y0 + enc1); ctx.lineTo(xs[3], y0 + enc1);
+    for (let j = 0; j <= filas; j++) { const y = yH + j * altoFila; ctx.moveTo(x0, y); ctx.lineTo(x0 + W0, y); }
+    // la fila Total no lleva divisiones internas entre LI, LS y marca
+    ctx.stroke();
+    ctx.fillStyle = C.total;
+    [xs[2], xs[3]].forEach(x => ctx.fillRect(x - 1, yT + 1, 2, altoFila - 2));
+    ctx.strokeStyle = C.line; ctx.beginPath(); ctx.moveTo(x0, yFin); ctx.lineTo(x0 + W0, yFin); ctx.stroke();
+
+    // Pie
+    ctx.fillStyle = C.muted; ctx.font = `italic 400 14px ${C.sans}`; ctx.textAlign = "center";
+    ctx.fillText(`n = ${r.n}   |   R = ${F(r.R)}   |   k = ${r.k}   |   A = ${F(r.A)}`, W / 2, yFin + 22);
+    ctx.font = `400 12px ${C.sans}`;
+    ctx.fillText("[ límite incluido     ) límite no incluido     el último intervalo es cerrado [ ]", W / 2, yFin + 42);
+    return cv;
+  }
+
+  // ---------- Flujo ----------
+  function mensaje(t, tipo = "warn") { const m = $("mensaje"); m.textContent = t; m.className = "msg " + tipo; m.hidden = !t; }
+  const modoActual = () => ($("modoPropio").checked ? "propio" : "sturges");
+
+  async function construir(nombre, textos) {
+    mensaje("");
+    const titulo = $("titulo").value.trim() || "Tabla de distribución de frecuencias";
+    nombre = nombre.trim() || "Variable";
+    let r;
+    try { r = calcular(textos, modoActual(), $("kPropio").value, $("aPropio").value); }
+    catch (e) { mensaje(e.message); return; }
+
+    // En modo Sturges se precargan k y A para que el alumno pueda partir de ellos
+    if (r.metodo === "sturges") { $("kPropio").value = r.k; $("aPropio").value = fmt(r.A, r.s, r.d); }
+
+    if (r.fuera > 0) {
+      mensaje(`Con k = ${r.k} y A = ${fmt(r.A, r.s, r.d)}, ${r.fuera} ${r.fuera === 1 ? "dato queda" : "datos quedan"} fuera de los intervalos. Aumenta k o A para que el último límite superior alcance al dato mayor.`);
+    }
+    ultimo = { r, nombre, titulo };
+    pintarPasos(r);
+    pintarTabla(r, nombre, titulo);
+    try { await document.fonts.ready; } catch (e) {}
+    ultimo.canvas = dibujar(r, nombre, titulo);
+    $("vista").src = ultimo.canvas.toDataURL("image/jpeg", 0.95);
+  }
+
+  function construirDesdeFormulario() { construir($("variable").value, leerTexto($("datos").value)); }
+  $("calcular").addEventListener("click", construirDesdeFormulario);
+
+  document.querySelectorAll('input[name="modo"]').forEach(el => el.addEventListener("change", () => {
+    const propio = modoActual() === "propio";
+    $("camposPropios").hidden = !propio;
+    $("hintPropio").hidden = !propio;
+    if (!propio) construirDesdeFormulario();
+  }));
+
+  $("archivo").addEventListener("change", (ev) => {
+    const archivo = ev.target.files[0];
+    if (!archivo) return;
+    if (!/\.(csv|txt)$/i.test(archivo.name)) { mensaje("Ese archivo no es CSV. Guarda tu hoja de cálculo como CSV y vuelve a subirla."); return; }
+    $("nombreArchivo").textContent = "Archivo: " + archivo.name;
+    const lector = new FileReader();
+    lector.onload = () => {
+      const texto = lector.result;
+      if (texto.includes(String.fromCharCode(0xFFFD))) {
+        const l2 = new FileReader(); l2.onload = () => usarCSV(l2.result); l2.readAsText(archivo, "ISO-8859-1");
+      } else usarCSV(texto);
+    };
+    lector.readAsText(archivo, "UTF-8");
+  });
+  function usarCSV(texto) {
+    try {
+      const { nombre, datos } = leerCSV(texto);
+      $("variable").value = nombre;
+      $("datos").value = datos.join(", ");
+      $("modoSturges").checked = true; $("camposPropios").hidden = true; $("hintPropio").hidden = true;
+      construir(nombre, datos);
+    } catch (e) { mensaje(e.message); }
+  }
+
+  // Descarga: dentro de Claude usa su permiso de descarga; en cualquier otra página, la descarga normal
+  let descargasClaude = null;
+  if (window.claude && typeof window.claude.use === "function") {
+    window.claude.use("downloads").then(d => { descargasClaude = d; }).catch(() => {});
+  }
+  $("descargar").addEventListener("click", () => {
+    if (!ultimo || !ultimo.canvas) return;
+    ultimo.canvas.toBlob(async (blob) => {
+      if (descargasClaude) {
+        try { await descargasClaude.save({ filename: "tabla_datos_agrupados.jpg", data: blob }); }
+        catch (e) { if (e && e.code !== "declined") mensaje("No se pudo descargar aquí. Guarda la imagen de abajo con clic derecho o manteniéndola presionada."); }
+      } else {
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob); a.download = "tabla_datos_agrupados.jpg";
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+      }
+    }, "image/jpeg", 0.95);
+  });
+
+  construirDesdeFormulario();
+})();
+</script>
+</body>
+</html>

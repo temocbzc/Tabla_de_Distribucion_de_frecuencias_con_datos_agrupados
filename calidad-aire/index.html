@@ -1,0 +1,565 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Actividad Calidad del Aire</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,600;1,8..60,400;1,8..60,600&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root {
+    --navy: #1F3864; --ink: #1B2433; --muted: #5A6578; --paper: #F4F6FA; --surface: #FFFFFF;
+    --line: #C9D3E3; --zebra: #EEF2F8; --total: #D6DEEB; --head-text: #FFFFFF; --focus: #3B6FD6;
+    --warn-bg: #FFF4E0; --warn-ink: #7A4B00; --ok-bg: #E6F3EA; --ok-ink: #1E5B32;
+    --haze: #8A6D3B; --haze-bg: #F6EFE2;
+    --sans: "Source Sans 3", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --navy: #8FB0E8; --ink: #E4E9F2; --muted: #A3AEC2; --paper: #121722; --surface: #1A2130;
+      --line: #33405A; --zebra: #1F2839; --total: #2A3650; --head-text: #0F1420; --focus: #8FB0E8;
+      --warn-bg: #3A2C12; --warn-ink: #F3D39A; --ok-bg: #16301F; --ok-ink: #A8DDB8;
+      --haze: #E2C48E; --haze-bg: #2C2618;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --navy: #8FB0E8; --ink: #E4E9F2; --muted: #A3AEC2; --paper: #121722; --surface: #1A2130;
+    --line: #33405A; --zebra: #1F2839; --total: #2A3650; --head-text: #0F1420; --focus: #8FB0E8;
+    --warn-bg: #3A2C12; --warn-ink: #F3D39A; --ok-bg: #16301F; --ok-ink: #A8DDB8;
+    --haze: #E2C48E; --haze-bg: #2C2618;
+  }
+  body { background: var(--paper); color: var(--ink); font-family: var(--sans); font-size: 16px; line-height: 1.5; }
+  .wrap { max-width: 760px; margin: 0 auto; padding-inline: 16px; padding-block: 22px 60px; display: grid; gap: 20px; }
+
+  header .kicker { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 700; margin: 0 0 4px; }
+  header h1 { font-family: var(--serif); font-weight: 600; font-size: clamp(1.6rem, 6vw, 2.2rem); line-height: 1.15; color: var(--navy); margin: 0 0 8px; text-wrap: balance; }
+  header p { margin: 0; color: var(--muted); }
+
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: grid; gap: 14px; min-width: 0; }
+  .momento { display: flex; align-items: baseline; gap: 10px; margin: 0; }
+  .momento .num {
+    flex: none; width: 30px; height: 30px; border-radius: 50%; background: var(--navy); color: var(--head-text);
+    display: grid; place-items: center; font-weight: 700; font-size: 0.95rem; align-self: center;
+  }
+  .momento h2 { font-family: var(--serif); font-weight: 600; font-size: 1.3rem; margin: 0; color: var(--navy); line-height: 1.2; }
+  .momento .tiempo { margin-left: auto; color: var(--muted); font-size: 0.85rem; white-space: nowrap; }
+  .lead { margin: 0; }
+  .hint { font-size: 0.86rem; color: var(--muted); margin: 0; }
+  .nota { background: var(--haze-bg); color: var(--ink); border-left: 3px solid var(--haze); border-radius: 6px; padding: 10px 12px; font-size: 0.92rem; margin: 0; }
+  .nota b { color: var(--haze); }
+
+  .field { display: grid; gap: 6px; }
+  .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  label { font-weight: 600; font-size: 0.97rem; }
+  .q label { font-weight: 600; }
+  .q label .qn { color: var(--navy); margin-right: 4px; }
+  input[type="text"], input[type="number"], textarea {
+    font: inherit; color: var(--ink); background: var(--paper); border: 1px solid var(--line);
+    border-radius: 6px; padding: 9px 10px; width: 100%; box-sizing: border-box;
+  }
+  textarea { min-height: 84px; resize: vertical; }
+  input:focus-visible, textarea:focus-visible, button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+  button { font: inherit; font-weight: 700; border-radius: 6px; padding: 12px 16px; cursor: pointer; border: 1px solid var(--navy); }
+  .primary { background: var(--navy); color: var(--head-text); }
+  .secondary { background: transparent; color: var(--navy); }
+  .actions { display: flex; flex-wrap: wrap; gap: 10px; }
+  .msg { border-radius: 6px; padding: 10px 12px; font-size: 0.92rem; margin: 0; }
+  .msg.warn { background: var(--warn-bg); color: var(--warn-ink); }
+  .msg.ok { background: var(--ok-bg); color: var(--ok-ink); }
+
+  .resultado { display: grid; gap: 12px; }
+  .pasos { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 0.95rem; }
+  .pasos li { padding: 8px 10px; background: var(--paper); border-radius: 6px; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+  .pasos b { color: var(--navy); }
+  .sym { font-family: var(--serif); font-style: italic; font-weight: 400; }
+  .sym sub { font-size: 0.7em; }
+  .tabla-img { width: 100%; height: auto; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+  details { font-size: 0.92rem; }
+  summary { cursor: pointer; color: var(--navy); font-weight: 600; }
+  .datos-lista { font-variant-numeric: tabular-nums; margin: 8px 0 0; overflow-wrap: anywhere; color: var(--muted); }
+
+  .final { border: 2px solid var(--navy); }
+  .estado { font-size: 0.9rem; color: var(--muted); margin: 0; }
+  footer { text-align: center; color: var(--muted); font-size: 0.82rem; }
+  footer a { color: var(--navy); }
+
+  @media (max-width: 420px) { .card { padding: 14px 12px; } .momento .tiempo { display: none; } }
+  @media (prefers-reduced-motion: no-preference) { button { transition: filter .15s; } button:hover { filter: brightness(1.1); } }
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header>
+    <p class="kicker">Laboratorio de Estadística · Datos agrupados</p>
+    <h1>¿Qué tan limpio es el aire que respiramos en Azcapotzalco?</h1>
+    <p>Vas a investigar qué son las partículas PM2.5, organizar en una tabla de datos agrupados lo que midió la estación de monitoreo cercana al plantel durante 2024 e interpretar los resultados. Al final descargas tu actividad en PDF.</p>
+  </header>
+
+  <section class="card" aria-labelledby="t-datos">
+    <h2 class="momento" id="t-datos" style="font-family:var(--serif);font-weight:600;font-size:1.2rem;color:var(--navy)">Tus datos</h2>
+    <div class="field"><label for="nombre">Nombre completo</label><input type="text" id="nombre" autocomplete="name"></div>
+    <div class="duo">
+      <div class="field"><label for="grupo">Grupo</label><input type="text" id="grupo" inputmode="numeric"></div>
+      <div class="field"><label for="equipo">Equipo (opcional)</label><input type="text" id="equipo"></div>
+    </div>
+    <p class="hint">Lo que escribas se guarda en este celular. Si cierras la página, al volver lo encontrarás aquí.</p>
+  </section>
+
+  <!-- MOMENTO 1 -->
+  <section class="card" aria-labelledby="m1">
+    <div class="momento"><span class="num">1</span><h2 id="m1">Investiga el contexto</h2><span class="tiempo">30 min</span></div>
+    <p class="lead">Investiga con tu celular. Puedes usar un buscador o un asistente de inteligencia artificial.</p>
+    <p class="nota"><b>Si usas IA:</b> pídele que te diga de dónde saca cada dato y compruébalo en una fuente oficial: la Dirección de Monitoreo Atmosférico (aire.cdmx.gob.mx), la Secretaría de Salud o la OMS. Si no coinciden, usa el dato oficial.</p>
+    <div class="q field"><label for="q1"><span class="qn">1.</span>¿Qué son las partículas PM2.5? ¿Por qué se llaman así?</label><textarea id="q1"></textarea></div>
+    <div class="q field"><label for="q2"><span class="qn">2.</span>¿Cuáles son sus principales fuentes en la Ciudad de México?</label><textarea id="q2"></textarea></div>
+    <div class="q field"><label for="q3"><span class="qn">3.</span>¿Qué daños causan a la salud? ¿Quiénes son las personas más vulnerables?</label><textarea id="q3"></textarea></div>
+    <div class="q field"><label for="q4"><span class="qn">4.</span>¿Qué es el SIMAT? ¿Cuál es la estación de monitoreo más cercana a tu plantel?</label><textarea id="q4"></textarea></div>
+    <div class="q field"><label for="q5"><span class="qn">5.</span>¿Cuál es el límite de PM2.5 en 24 horas que marca la norma mexicana NOM-025-SSA1-2021 y cuál es el valor que recomienda la OMS?</label><textarea id="q5"></textarea></div>
+    <div class="q field"><label for="q6"><span class="qn">6.</span>¿En qué época del año suele empeorar la calidad del aire en la CDMX y por qué?</label><textarea id="q6"></textarea></div>
+    <div class="q field"><label for="q7"><span class="qn">7.</span>¿Algún dato que te dio la IA o un sitio no oficial era distinto al de la fuente oficial? ¿Cuál? Si no usaste IA, escribe qué fuentes consultaste.</label><textarea id="q7"></textarea></div>
+  </section>
+
+  <!-- MOMENTO 2 -->
+  <section class="card" aria-labelledby="m2">
+    <div class="momento"><span class="num">2</span><h2 id="m2">La tabla con la regla de Sturges</h2><span class="tiempo">30 min</span></div>
+    <p class="lead"><b>Variable:</b> concentración promedio diaria de PM2.5, en microgramos por metro cúbico (µg/m³), medida por la estación <b>Camarones (CAM)</b>, en Azcapotzalco, durante 2024.</p>
+    <p class="hint">Son datos reales del Sistema de Monitoreo Atmosférico de la CDMX. Hay 286 días con medición; los demás días la estación no registró dato (mantenimiento o fallas).</p>
+    <div class="actions"><button type="button" class="primary" id="btnT1">Construir tabla con Sturges</button></div>
+    <div class="resultado" id="res1" hidden>
+      <ol class="pasos" id="pasos1"></ol>
+      <img class="tabla-img" id="img1" alt="Tabla de distribución de frecuencias de la estación Camarones con la regla de Sturges">
+      <p class="hint">Para leer la tabla con calma, amplíala con dos dedos.</p>
+    </div>
+    <details><summary>Ver los 286 datos ordenados</summary><p class="datos-lista" id="lista1"></p></details>
+    <div class="q field"><label for="q8"><span class="qn">8.</span>Escribe el cálculo del rango <i>R</i>, del número de clases <i>k</i> y de la amplitud <i>A</i>, con los números sustituidos. ¿Por qué <i>A</i> se redondea hacia arriba?</label><textarea id="q8"></textarea></div>
+    <div class="q field"><label for="q9"><span class="qn">9.</span>¿En qué intervalo hubo más días? ¿Cuántos días fueron y qué porcentaje del total representan?</label><textarea id="q9"></textarea></div>
+    <div class="q field"><label for="q10"><span class="qn">10.</span>¿Qué porcentaje de los días tuvo una concentración menor que 20 µg/m³? ¿En qué columna lo leíste?</label><textarea id="q10"></textarea></div>
+    <div class="q field"><label for="q11"><span class="qn">11.</span>¿Cuántos días tuvieron una concentración de 38 µg/m³ o más? Explica cómo lo calculaste.</label><textarea id="q11"></textarea></div>
+    <div class="q field"><label for="q12"><span class="qn">12.</span>La norma mexicana fija un límite de 33 µg/m³. ¿Puedes saber con esta tabla cuántos días exactamente se rebasó? ¿Por qué? ¿Entre qué valores puedes asegurar que está ese número de días?</label><textarea id="q12"></textarea></div>
+  </section>
+
+  <!-- MOMENTO 3 -->
+  <section class="card" aria-labelledby="m3">
+    <div class="momento"><span class="num">3</span><h2 id="m3">Tu propia tabla</h2><span class="tiempo">25 min</span></div>
+    <p class="lead">Ahora tú eliges el número de clases <i>k</i> y la amplitud <i>A</i>. El primer límite inferior sigue siendo el dato menor (8 µg/m³).</p>
+    <p class="nota"><b>Reto:</b> busca una amplitud con la que uno de los límites sea exactamente <b>33</b>. Recuerda que el último límite superior debe alcanzar al dato mayor.</p>
+    <div class="duo">
+      <div class="field"><label for="k2">Número de clases <span class="sym">k</span></label><input type="number" id="k2" min="1" max="40" step="1" inputmode="numeric"></div>
+      <div class="field"><label for="a2">Amplitud <span class="sym">A</span></label><input type="number" id="a2" min="1" step="1" inputmode="numeric"></div>
+    </div>
+    <div class="actions"><button type="button" class="primary" id="btnT2">Construir mi tabla</button></div>
+    <p class="msg warn" id="msg2" hidden></p>
+    <div class="resultado" id="res2" hidden>
+      <ol class="pasos" id="pasos2"></ol>
+      <img class="tabla-img" id="img2" alt="Tabla de distribución de frecuencias de la estación Camarones con k y A elegidos por el alumno">
+      <p class="hint">Para leer la tabla con calma, amplíala con dos dedos.</p>
+    </div>
+    <div class="q field"><label for="q13"><span class="qn">13.</span>¿Qué valores de <i>k</i> y <i>A</i> usaste? Con tu tabla, ¿cuántos días alcanzaron o rebasaron 33 µg/m³? ¿Qué porcentaje es?</label><textarea id="q13"></textarea></div>
+    <div class="q field"><label for="q14"><span class="qn">14.</span>Compara tu tabla con la de Sturges. ¿Qué ventajas y desventajas tiene usar pocas clases? ¿Y usar muchas?</label><textarea id="q14"></textarea></div>
+  </section>
+
+  <!-- MOMENTO 4 -->
+  <section class="card" aria-labelledby="m4">
+    <div class="momento"><span class="num">4</span><h2 id="m4">Norte contra sur</h2><span class="tiempo">25 min</span></div>
+    <p class="lead">Compara con la estación <b>Centro de Ciencias de la Atmósfera (CCA)</b>, en Ciudad Universitaria, al sur de la ciudad. En 2024 registró 321 días con medición.</p>
+    <div class="actions"><button type="button" class="primary" id="btnT3">Construir tabla de CCA con Sturges</button></div>
+    <div class="resultado" id="res3" hidden>
+      <ol class="pasos" id="pasos3"></ol>
+      <img class="tabla-img" id="img3" alt="Tabla de distribución de frecuencias de la estación CCA con la regla de Sturges">
+      <p class="hint">Para leer la tabla con calma, amplíala con dos dedos.</p>
+    </div>
+    <details><summary>Ver los 321 datos ordenados</summary><p class="datos-lista" id="lista3"></p></details>
+    <div class="q field"><label for="q15"><span class="qn">15.</span>¿Por qué para comparar las dos estaciones conviene usar <i>fr<sub>i</sub></i> % y no <i>f<sub>i</sub></i>?</label><textarea id="q15"></textarea></div>
+    <div class="q field"><label for="q16"><span class="qn">16.</span>Con las dos tablas de Sturges, ¿qué porcentaje de días tuvo una concentración menor que 20 µg/m³ en cada estación? Si en alguna no puedes leerlo directamente, explica por qué y da tu mejor estimación.</label><textarea id="q16"></textarea></div>
+    <div class="q field"><label for="q17"><span class="qn">17.</span>¿En cuál de las dos zonas el aire fue más limpio en 2024? Justifica con datos de las tablas.</label><textarea id="q17"></textarea></div>
+  </section>
+
+  <!-- CIERRE -->
+  <section class="card" aria-labelledby="m5">
+    <div class="momento"><span class="num">5</span><h2 id="m5">Reflexión</h2><span class="tiempo">10 min</span></div>
+    <div class="q field"><label for="q18"><span class="qn">18.</span>La OMS recomienda no rebasar 15 µg/m³ en 24 horas. Según tus tablas, ¿qué tan seguido se cumplió esa recomendación en Azcapotzalco? ¿Qué podemos hacer, como comunidad del plantel, para protegernos o para contaminar menos?</label><textarea id="q18"></textarea></div>
+  </section>
+
+  <section class="card final" aria-labelledby="t-pdf">
+    <h2 id="t-pdf" style="font-family:var(--serif);font-weight:600;font-size:1.25rem;color:var(--navy);margin:0">Entrega</h2>
+    <p class="lead">Revisa tus respuestas y descarga tu actividad. El PDF incluye tus datos, tus respuestas y las tres tablas.</p>
+    <div class="actions"><button type="button" class="primary" id="btnPDF">Descargar mi actividad en PDF</button></div>
+    <p class="msg" id="msgPDF" hidden></p>
+    <p class="estado" id="estado"></p>
+  </section>
+
+  <footer>Datos: Sistema de Monitoreo Atmosférico de la Ciudad de México (SIMAT), promedios diarios 2024, <a href="https://aire.cdmx.gob.mx">aire.cdmx.gob.mx</a>. Laboratorio de Estadística · CCH-UNAM.</footer>
+</div>
+
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const DATOS = {"CAM":[["2024-01-01",59],["2024-01-02",22],["2024-01-03",18],["2024-01-04",16],["2024-01-05",14],["2024-01-06",10],["2024-01-07",13],["2024-01-08",10],["2024-01-11",25],["2024-01-12",27],["2024-01-13",22],["2024-01-14",16],["2024-01-16",28],["2024-01-17",32],["2024-01-18",28],["2024-01-20",16],["2024-01-21",22],["2024-01-22",23],["2024-01-23",19],["2024-01-24",17],["2024-01-25",19],["2024-01-26",15],["2024-01-27",22],["2024-01-28",33],["2024-01-29",30],["2024-01-30",18],["2024-01-31",24],["2024-02-03",8],["2024-02-04",13],["2024-02-05",9],["2024-02-06",15],["2024-02-07",31],["2024-02-08",34],["2024-02-09",29],["2024-02-10",20],["2024-02-11",9],["2024-02-12",17],["2024-02-13",20],["2024-02-14",30],["2024-02-15",15],["2024-02-16",23],["2024-02-18",21],["2024-02-23",30],["2024-02-24",38],["2024-02-25",21],["2024-02-26",14],["2024-02-27",27],["2024-02-28",29],["2024-02-29",24],["2024-03-01",24],["2024-03-02",21],["2024-03-03",19],["2024-03-04",20],["2024-03-05",30],["2024-03-06",25],["2024-03-07",23],["2024-03-08",27],["2024-03-09",32],["2024-03-10",32],["2024-03-11",26],["2024-03-12",28],["2024-03-13",20],["2024-03-14",23],["2024-03-15",21],["2024-03-16",28],["2024-03-17",20],["2024-03-18",19],["2024-03-19",24],["2024-03-20",27],["2024-03-21",22],["2024-03-23",33],["2024-03-24",25],["2024-03-25",28],["2024-03-26",44],["2024-03-27",58],["2024-03-28",40],["2024-03-29",30],["2024-03-30",37],["2024-03-31",33],["2024-04-01",21],["2024-04-02",23],["2024-04-03",20],["2024-04-04",16],["2024-04-05",19],["2024-04-06",15],["2024-04-08",21],["2024-04-09",17],["2024-04-10",17],["2024-04-12",25],["2024-04-13",22],["2024-04-14",22],["2024-04-15",27],["2024-04-16",25],["2024-04-19",34],["2024-04-20",40],["2024-04-21",28],["2024-04-22",24],["2024-04-23",35],["2024-04-24",28],["2024-04-25",29],["2024-04-26",31],["2024-04-27",30],["2024-04-28",25],["2024-04-29",32],["2024-04-30",35],["2024-05-01",28],["2024-05-02",25],["2024-05-03",33],["2024-05-04",36],["2024-05-05",28],["2024-05-06",31],["2024-05-07",33],["2024-05-08",30],["2024-05-10",27],["2024-05-11",42],["2024-05-12",42],["2024-05-13",49],["2024-05-14",59],["2024-05-17",36],["2024-05-18",28],["2024-05-19",26],["2024-05-20",28],["2024-05-21",21],["2024-05-22",31],["2024-05-23",25],["2024-06-19",13],["2024-06-22",11],["2024-06-23",15],["2024-06-24",24],["2024-06-25",19],["2024-06-26",16],["2024-06-27",24],["2024-06-29",16],["2024-06-30",12],["2024-07-04",22],["2024-07-13",22],["2024-07-14",17],["2024-07-15",23],["2024-07-16",28],["2024-07-17",24],["2024-07-18",17],["2024-07-19",28],["2024-07-20",18],["2024-07-21",11],["2024-07-22",17],["2024-07-23",18],["2024-07-24",26],["2024-07-25",25],["2024-07-26",29],["2024-07-27",40],["2024-07-28",24],["2024-07-29",11],["2024-07-30",17],["2024-08-08",16],["2024-08-09",23],["2024-08-10",18],["2024-08-11",19],["2024-08-12",11],["2024-08-13",16],["2024-08-14",17],["2024-08-15",13],["2024-08-16",13],["2024-08-17",14],["2024-08-18",13],["2024-08-22",14],["2024-08-23",17],["2024-08-24",17],["2024-08-25",24],["2024-08-26",16],["2024-08-27",14],["2024-08-28",24],["2024-08-29",20],["2024-08-30",24],["2024-08-31",24],["2024-09-01",18],["2024-09-02",17],["2024-09-03",28],["2024-09-05",16],["2024-09-09",28],["2024-09-10",23],["2024-09-11",17],["2024-09-12",19],["2024-09-13",24],["2024-09-14",19],["2024-09-15",25],["2024-09-16",33],["2024-09-17",26],["2024-09-18",29],["2024-09-19",20],["2024-09-22",12],["2024-09-23",17],["2024-09-24",14],["2024-09-25",12],["2024-09-26",14],["2024-09-27",11],["2024-09-28",17],["2024-09-29",21],["2024-10-01",12],["2024-10-02",11],["2024-10-04",20],["2024-10-05",26],["2024-10-06",12],["2024-10-08",18],["2024-10-09",25],["2024-10-10",14],["2024-10-11",18],["2024-10-12",19],["2024-10-13",28],["2024-10-14",24],["2024-10-15",19],["2024-10-16",15],["2024-10-17",14],["2024-10-18",18],["2024-10-19",10],["2024-10-20",10],["2024-10-21",8],["2024-10-22",12],["2024-10-23",20],["2024-10-24",19],["2024-10-25",30],["2024-10-26",18],["2024-10-27",16],["2024-10-28",22],["2024-10-29",33],["2024-10-30",30],["2024-10-31",26],["2024-11-01",28],["2024-11-02",29],["2024-11-03",31],["2024-11-04",32],["2024-11-05",29],["2024-11-06",33],["2024-11-07",34],["2024-11-08",17],["2024-11-09",18],["2024-11-10",15],["2024-11-11",16],["2024-11-12",20],["2024-11-13",19],["2024-11-14",17],["2024-11-15",23],["2024-11-16",37],["2024-11-17",22],["2024-11-18",19],["2024-11-19",21],["2024-11-20",21],["2024-11-22",32],["2024-11-23",23],["2024-11-24",24],["2024-11-25",21],["2024-11-26",14],["2024-11-27",32],["2024-11-28",32],["2024-11-29",34],["2024-11-30",33],["2024-12-01",17],["2024-12-02",21],["2024-12-03",25],["2024-12-04",26],["2024-12-05",23],["2024-12-06",30],["2024-12-07",22],["2024-12-08",20],["2024-12-09",23],["2024-12-10",29],["2024-12-11",21],["2024-12-12",33],["2024-12-13",28],["2024-12-14",21],["2024-12-15",16],["2024-12-16",17],["2024-12-17",30],["2024-12-18",27],["2024-12-19",13],["2024-12-20",19],["2024-12-21",16],["2024-12-22",13],["2024-12-23",20],["2024-12-24",27],["2024-12-25",50],["2024-12-26",26],["2024-12-27",27],["2024-12-28",33],["2024-12-29",23],["2024-12-30",34],["2024-12-31",31]],"CCA":[["2024-01-01",52],["2024-01-02",18],["2024-01-03",17],["2024-01-04",9],["2024-01-05",6],["2024-01-06",7],["2024-01-07",10],["2024-01-08",8],["2024-01-09",10],["2024-01-10",10],["2024-01-11",12],["2024-01-12",13],["2024-01-13",12],["2024-01-14",13],["2024-01-15",14],["2024-01-16",19],["2024-01-17",21],["2024-01-18",20],["2024-01-19",18],["2024-01-20",14],["2024-01-21",17],["2024-01-22",11],["2024-01-23",12],["2024-01-24",11],["2024-01-25",10],["2024-01-26",6],["2024-01-27",14],["2024-01-28",28],["2024-01-29",24],["2024-01-30",13],["2024-01-31",19],["2024-02-01",19],["2024-02-02",9],["2024-02-03",8],["2024-02-04",9],["2024-02-05",7],["2024-02-06",13],["2024-02-07",22],["2024-02-08",26],["2024-02-09",22],["2024-02-10",14],["2024-02-11",8],["2024-02-12",9],["2024-02-13",15],["2024-02-14",27],["2024-02-15",13],["2024-02-16",18],["2024-02-17",7],["2024-02-18",18],["2024-02-19",16],["2024-02-20",15],["2024-02-21",16],["2024-02-22",26],["2024-02-23",22],["2024-02-24",30],["2024-02-25",14],["2024-02-26",11],["2024-02-27",17],["2024-02-28",25],["2024-02-29",20],["2024-03-01",21],["2024-03-02",19],["2024-03-03",18],["2024-03-04",19],["2024-03-05",20],["2024-03-06",22],["2024-03-07",18],["2024-03-08",12],["2024-03-09",17],["2024-03-10",29],["2024-03-11",21],["2024-03-12",19],["2024-03-13",21],["2024-03-14",19],["2024-03-15",19],["2024-03-16",21],["2024-03-17",14],["2024-03-18",16],["2024-03-19",28],["2024-03-20",23],["2024-03-21",17],["2024-03-22",20],["2024-03-23",28],["2024-03-24",28],["2024-03-27",38],["2024-03-28",45],["2024-03-29",36],["2024-03-30",40],["2024-03-31",47],["2024-04-01",25],["2024-04-02",29],["2024-04-03",17],["2024-04-04",17],["2024-04-05",17],["2024-04-06",14],["2024-04-08",22],["2024-04-09",17],["2024-04-10",18],["2024-04-11",23],["2024-04-12",24],["2024-04-13",21],["2024-04-14",23],["2024-04-15",31],["2024-04-16",30],["2024-04-17",28],["2024-04-18",30],["2024-04-19",35],["2024-04-20",30],["2024-04-21",24],["2024-04-22",22],["2024-04-24",25],["2024-04-25",30],["2024-04-26",38],["2024-04-27",30],["2024-04-28",27],["2024-04-29",24],["2024-04-30",32],["2024-05-01",29],["2024-05-02",31],["2024-05-03",35],["2024-05-04",33],["2024-05-05",29],["2024-05-06",33],["2024-05-07",28],["2024-05-08",32],["2024-05-09",42],["2024-05-10",20],["2024-05-11",28],["2024-05-12",43],["2024-05-13",56],["2024-05-14",53],["2024-05-15",47],["2024-05-16",34],["2024-05-17",29],["2024-05-18",26],["2024-05-19",24],["2024-05-20",21],["2024-05-21",18],["2024-05-22",33],["2024-05-23",19],["2024-05-24",27],["2024-05-25",21],["2024-05-26",21],["2024-05-27",14],["2024-05-28",21],["2024-05-29",29],["2024-05-30",25],["2024-05-31",21],["2024-06-01",23],["2024-06-02",18],["2024-06-03",17],["2024-06-04",18],["2024-06-05",29],["2024-06-06",24],["2024-06-07",31],["2024-06-09",27],["2024-06-10",19],["2024-06-11",19],["2024-06-12",18],["2024-06-13",15],["2024-06-14",15],["2024-06-15",13],["2024-06-16",13],["2024-06-17",12],["2024-06-18",13],["2024-06-19",12],["2024-06-20",10],["2024-06-21",6],["2024-06-22",10],["2024-06-23",10],["2024-06-25",9],["2024-06-26",10],["2024-06-27",12],["2024-06-28",9],["2024-06-30",10],["2024-07-01",6],["2024-07-02",7],["2024-07-03",6],["2024-07-04",12],["2024-07-05",14],["2024-07-06",16],["2024-07-07",22],["2024-07-08",15],["2024-07-09",14],["2024-07-12",10],["2024-07-13",18],["2024-07-14",20],["2024-07-15",17],["2024-07-16",19],["2024-07-17",17],["2024-07-18",11],["2024-07-19",13],["2024-07-20",15],["2024-07-22",8],["2024-07-24",19],["2024-07-25",16],["2024-07-26",18],["2024-07-27",23],["2024-07-28",19],["2024-07-29",11],["2024-07-30",12],["2024-07-31",20],["2024-08-01",15],["2024-08-02",10],["2024-08-04",12],["2024-08-05",16],["2024-08-06",14],["2024-08-07",15],["2024-08-08",14],["2024-08-09",15],["2024-08-10",15],["2024-08-11",20],["2024-08-21",10],["2024-08-23",12],["2024-08-24",14],["2024-08-25",16],["2024-08-28",14],["2024-08-29",14],["2024-08-30",17],["2024-08-31",16],["2024-09-19",13],["2024-09-20",20],["2024-09-21",13],["2024-09-22",8],["2024-09-23",12],["2024-09-25",8],["2024-09-26",8],["2024-09-27",6],["2024-09-28",10],["2024-09-29",18],["2024-09-30",16],["2024-10-01",11],["2024-10-02",7],["2024-10-03",9],["2024-10-04",18],["2024-10-05",14],["2024-10-06",8],["2024-10-07",8],["2024-10-08",15],["2024-10-09",20],["2024-10-10",9],["2024-10-12",14],["2024-10-13",26],["2024-10-14",22],["2024-10-15",16],["2024-10-16",13],["2024-10-17",12],["2024-10-18",13],["2024-10-19",7],["2024-10-20",5],["2024-10-21",5],["2024-10-22",9],["2024-10-24",15],["2024-10-25",20],["2024-10-26",17],["2024-10-27",13],["2024-10-28",18],["2024-10-29",25],["2024-10-30",23],["2024-10-31",20],["2024-11-01",18],["2024-11-02",21],["2024-11-03",21],["2024-11-04",24],["2024-11-05",21],["2024-11-06",19],["2024-11-07",23],["2024-11-08",13],["2024-11-09",10],["2024-11-10",12],["2024-11-11",9],["2024-11-12",13],["2024-11-13",14],["2024-11-14",12],["2024-11-15",15],["2024-11-16",23],["2024-11-17",13],["2024-11-18",11],["2024-11-19",17],["2024-11-20",14],["2024-11-21",14],["2024-11-22",20],["2024-11-23",10],["2024-11-24",15],["2024-11-25",11],["2024-11-26",10],["2024-11-27",14],["2024-11-28",15],["2024-11-29",19],["2024-11-30",19],["2024-12-01",12],["2024-12-02",15],["2024-12-03",19],["2024-12-04",16],["2024-12-05",18],["2024-12-06",22],["2024-12-07",13],["2024-12-08",14],["2024-12-09",21],["2024-12-10",21],["2024-12-11",15],["2024-12-12",28],["2024-12-13",22],["2024-12-14",15],["2024-12-15",11],["2024-12-16",11],["2024-12-17",19],["2024-12-18",19],["2024-12-19",7],["2024-12-20",13],["2024-12-21",12],["2024-12-22",9],["2024-12-23",10],["2024-12-24",15],["2024-12-25",38],["2024-12-26",15],["2024-12-27",13],["2024-12-28",15],["2024-12-29",18],["2024-12-30",20],["2024-12-31",21]]};
+
+  const decimalesDe = (txt) => { const p = String(txt).split("."); return p.length > 1 ? p[1].length : 0; };
+  const fmt = (entero, escala, dec) => (entero / escala).toFixed(dec);
+  const dos = (v) => v.toFixed(2);
+
+  // ---------- Cálculo ----------
+  function calcular(textos, modo, kTxt, aTxt) {
+    const malos = textos.filter(t => !Number.isFinite(Number(t)));
+    if (malos.length) throw new Error(`Estos datos no son números: ${malos.slice(0, 5).join(", ")}. Corrígelos y vuelve a intentar.`);
+    const n = textos.length;
+    if (n < 2) throw new Error("Se necesitan al menos 2 datos.");
+    const dDatos = Math.max(...textos.map(decimalesDe));
+
+    let k, aTexto, d, metodo;
+    if (modo === "propio") {
+      k = parseInt(kTxt, 10);
+      if (!Number.isInteger(k) || k < 1 || k > 50) throw new Error("Escribe un número de clases k entero entre 1 y 50.");
+      aTexto = String(aTxt).trim().replace(",", ".");
+      if (!(Number(aTexto) > 0)) throw new Error("Escribe una amplitud A mayor que 0.");
+      d = Math.max(dDatos, decimalesDe(aTexto));
+      metodo = "propio";
+    } else {
+      d = dDatos;
+      metodo = "sturges";
+    }
+    const s = Math.pow(10, d);
+    const vals = textos.map(t => Math.round(Number(t) * s)).sort((a, b) => a - b);
+    const min = vals[0], max = vals[n - 1];
+    const R = max - min;
+    if (R === 0) throw new Error("Todos los datos son iguales (el rango es 0). Para agrupar se necesitan datos distintos.");
+
+    const kSturgesExacto = 1 + 3.322 * Math.log10(n);
+    const kSturges = Math.ceil(kSturgesExacto - 1e-9);
+    let A;
+    if (metodo === "sturges") {
+      k = kSturges;
+      A = Math.ceil(R / k - 1e-9);           // amplitud hacia arriba con los decimales de los datos
+      if (A < 1) A = 1;
+    } else {
+      A = Math.round(Number(aTexto) * s);
+    }
+
+    // Intervalos: [LI, LS) y el último [LI, LS]
+    const clases = [];
+    for (let i = 0; i < k; i++) clases.push({ i: i + 1, LI: min + i * A, LS: min + (i + 1) * A, f: 0 });
+    let fuera = 0;
+    vals.forEach(v => {
+      let idx = Math.floor((v - min) / A);
+      if (idx === k && v === clases[k - 1].LS) idx = k - 1;
+      if (idx >= 0 && idx < k) clases[idx].f++; else fuera++;
+    });
+    let F = 0, Fr = 0;
+    clases.forEach(c => { c.fr = c.f / n * 100; F += c.f; Fr += c.fr; c.F = F; c.Fr = Fr; });
+
+    return { n, d, s, dDatos, vals, min, max, R, k, A, kSturgesExacto, kSturges, metodo, clases, fuera };
+  }
+
+  // Texto de marca de clase: (LI + LS) / 2, con un decimal extra si hace falta
+  function marca(c, r) {
+    const doble = c.LI + c.LS;               // = 2 * marca, en enteros escalados
+    const dec = doble % 2 === 0 ? r.d : r.d + 1;
+    return (doble / 2 / r.s).toFixed(dec);
+  }
+
+
+  const C = {
+    navy: "#1F3864", ink: "#1B2433", line: "#B7C3D6", zebra: "#EEF2F8", total: "#D6DEEB", muted: "#555555",
+    sans: '"Source Sans 3", "Segoe UI", Roboto, Arial, sans-serif',
+    serif: '"Source Serif 4", Georgia, "Times New Roman", serif'
+  };
+  function simbolo(ctx, base, sub, extra, cx, cy, tam = 21) {
+    const fB = `italic 400 ${tam}px ${C.serif}`, fS = `italic 400 ${Math.round(tam * 0.68)}px ${C.serif}`, fE = `700 ${tam - 3}px ${C.sans}`;
+    ctx.font = fB; const wB = ctx.measureText(base).width;
+    ctx.font = fS; const wS = sub ? ctx.measureText(sub).width + 1 : 0;
+    ctx.font = fE; const wE = extra ? ctx.measureText(extra).width : 0;
+    let x = cx - (wB + wS + wE) / 2;
+    ctx.textAlign = "left"; ctx.textBaseline = "middle";
+    ctx.font = fB; ctx.fillText(base, x, cy); x += wB;
+    if (sub) { ctx.font = fS; ctx.fillText(sub, x + 1, cy + 6); x += wS; }
+    if (extra) { ctx.font = fE; ctx.fillText(extra, x, cy); }
+  }
+
+  function dibujar(r, nombre, titulo) {
+    const F = (v) => fmt(v, r.s, r.d);
+    const escala = 3, margen = 36;
+    const anchos = [54, 104, 104, 112, 70, 92, 70, 92];
+    const W0 = anchos.reduce((a, b) => a + b, 0), W = W0 + margen * 2;
+    const altoTitulo = 78, enc1 = 34, enc2 = 40, altoFila = 34;
+    const filas = r.clases.length + 1, altoPie = 58;
+    const H = margen + altoTitulo + enc1 + enc2 + altoFila * filas + altoPie;
+    const cv = document.createElement("canvas");
+    cv.width = W * escala; cv.height = H * escala;
+    const ctx = cv.getContext("2d");
+    ctx.scale(escala, escala);
+    ctx.fillStyle = "#FFFFFF"; ctx.fillRect(0, 0, W, H);
+
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillStyle = C.navy; ctx.font = `600 25px ${C.serif}`;
+    ctx.fillText(titulo, W / 2, margen + 14);
+    ctx.fillStyle = C.muted; ctx.font = `400 15px ${C.sans}`;
+    ctx.fillText("Variable: " + nombre, W / 2, margen + 44);
+
+    const x0 = margen, y0 = margen + altoTitulo;
+    const xs = [x0]; anchos.forEach(a => xs.push(xs[xs.length - 1] + a));
+    const cx = anchos.map((a, k) => xs[k] + a / 2);
+    const yH = y0 + enc1 + enc2;
+
+    // Encabezado
+    ctx.fillStyle = C.navy; ctx.fillRect(x0, y0, W0, enc1 + enc2);
+    ctx.fillStyle = "#FFFFFF";
+    const cyAll = y0 + (enc1 + enc2) / 2;
+    simbolo(ctx, "i", "", "", cx[0], cyAll - 7);
+    ctx.font = `600 11px ${C.sans}`; ctx.textAlign = "center"; ctx.fillText("Clase", cx[0], cyAll + 15);
+    ctx.font = `700 15px ${C.sans}`; ctx.fillText("Intervalos de clase", (xs[1] + xs[3]) / 2, y0 + enc1 / 2);
+    simbolo(ctx, "LI", "i", "", cx[1], y0 + enc1 + enc2 / 2);
+    simbolo(ctx, "LS", "i", "", cx[2], y0 + enc1 + enc2 / 2);
+    simbolo(ctx, "x", "i", "", cx[3], cyAll - 7);
+    ctx.font = `600 11px ${C.sans}`; ctx.textAlign = "center"; ctx.fillText("Marca de clase", cx[3], cyAll + 15);
+    simbolo(ctx, "f", "i", "", cx[4], cyAll);
+    simbolo(ctx, "fr", "i", " %", cx[5], cyAll);
+    simbolo(ctx, "F", "i", "", cx[6], cyAll);
+    simbolo(ctx, "Fr", "i", " %", cx[7], cyAll);
+
+    // Filas
+    r.clases.forEach((c, j) => {
+      const y = yH + j * altoFila, cy = y + altoFila / 2 + 1;
+      ctx.fillStyle = j % 2 === 1 ? C.zebra : "#FFFFFF"; ctx.fillRect(x0, y, W0, altoFila);
+      ctx.fillStyle = C.ink; ctx.font = `400 16px ${C.sans}`; ctx.textBaseline = "middle";
+      ctx.textAlign = "center";
+      [String(c.i), null, null, marca(c, r), String(c.f), dos(c.fr), String(c.F), dos(c.Fr)].forEach((t, col) => {
+        if (t !== null) ctx.fillText(t, cx[col], cy);
+      });
+      // LI con corchete
+      ctx.textAlign = "left"; ctx.fillStyle = C.navy; ctx.font = `700 17px ${C.sans}`;
+      ctx.fillText("[", xs[1] + 10, cy);
+      ctx.fillStyle = C.ink; ctx.font = `400 16px ${C.sans}`; ctx.textAlign = "right";
+      ctx.fillText(F(c.LI), xs[2] - 14, cy);
+      // LS con paréntesis o corchete
+      ctx.textAlign = "left"; ctx.fillText(F(c.LS), xs[2] + 14, cy);
+      ctx.textAlign = "right"; ctx.fillStyle = C.navy; ctx.font = `700 17px ${C.sans}`;
+      ctx.fillText(j === r.k - 1 ? "]" : ")", xs[3] - 10, cy);
+    });
+    const yT = yH + r.clases.length * altoFila;
+    ctx.fillStyle = C.total; ctx.fillRect(x0, yT, W0, altoFila);
+    ctx.fillStyle = C.ink; ctx.font = `700 16px ${C.sans}`; ctx.textAlign = "center";
+    const sumaF = r.clases.reduce((a, c) => a + c.f, 0), sumaFr = r.clases.reduce((a, c) => a + c.fr, 0);
+    ctx.fillText("Total", (xs[1] + xs[4]) / 2, yT + altoFila / 2 + 1);
+    ctx.fillText(String(sumaF), cx[4], yT + altoFila / 2 + 1);
+    ctx.fillText(dos(sumaFr), cx[5], yT + altoFila / 2 + 1);
+
+    // Cuadrícula
+    const yFin = yT + altoFila;
+    ctx.strokeStyle = C.line; ctx.lineWidth = 1; ctx.beginPath();
+    xs.forEach((x, k) => {
+      if (k === 2) { ctx.moveTo(x, y0 + enc1); ctx.lineTo(x, yFin); }   // separador LI | LS bajo el título común
+      else if (k === 3 || k === 1) { ctx.moveTo(x, y0); ctx.lineTo(x, yFin); }
+      else { ctx.moveTo(x, y0); ctx.lineTo(x, yFin); }
+    });
+    ctx.moveTo(x0, y0); ctx.lineTo(x0 + W0, y0);
+    ctx.moveTo(xs[1], y0 + enc1); ctx.lineTo(xs[3], y0 + enc1);
+    for (let j = 0; j <= filas; j++) { const y = yH + j * altoFila; ctx.moveTo(x0, y); ctx.lineTo(x0 + W0, y); }
+    // la fila Total no lleva divisiones internas entre LI, LS y marca
+    ctx.stroke();
+    ctx.fillStyle = C.total;
+    [xs[2], xs[3]].forEach(x => ctx.fillRect(x - 1, yT + 1, 2, altoFila - 2));
+    ctx.strokeStyle = C.line; ctx.beginPath(); ctx.moveTo(x0, yFin); ctx.lineTo(x0 + W0, yFin); ctx.stroke();
+
+    // Pie
+    ctx.fillStyle = C.muted; ctx.font = `italic 400 14px ${C.sans}`; ctx.textAlign = "center";
+    ctx.fillText(`n = ${r.n}   |   R = ${F(r.R)}   |   k = ${r.k}   |   A = ${F(r.A)}`, W / 2, yFin + 22);
+    ctx.font = `400 12px ${C.sans}`;
+    ctx.fillText("[ límite incluido     ) límite no incluido     el último intervalo es cerrado [ ]", W / 2, yFin + 42);
+    return cv;
+  }
+
+
+
+  // ---------- Pasos en pantalla ----------
+  function pasosHTML(r) {
+    const F = (v) => fmt(v, r.s, r.d);
+    const L = [];
+    L.push(`<b>n</b> = ${r.n} días`);
+    L.push(`<b>R</b> = ${F(r.max)} − ${F(r.min)} = <b>${F(r.R)}</b>`);
+    if (r.metodo === "sturges") {
+      L.push(`<b>k</b> = 1 + 3.322 log(${r.n}) = ${r.kSturgesExacto.toFixed(2)} → <b>k = ${r.k}</b>`);
+      L.push(`<b>A</b> = ${F(r.R)} / ${r.k} = ${(r.R / r.s / r.k).toFixed(2)} → <b>A = ${F(r.A)}</b>`);
+    } else {
+      L.push(`<b>k = ${r.k}</b> y <b>A = ${F(r.A)}</b> (elegidos por ti)`);
+    }
+    const ls = r.clases[r.k - 1].LS;
+    L.push(`<b>LI<sub>1</sub></b> = ${F(r.min)}; último límite superior = ${F(ls)}`);
+    return L.map(t => `<li>${t}</li>`).join("");
+  }
+
+  // ---------- Tablas ----------
+  const VARIABLE = "PM2.5 promedio diario (µg/m³)";
+  const tablas = { t1: null, t2: null, t3: null };
+
+  async function construirTabla(clave, estacion, modo, k, A) {
+    const textos = DATOS[estacion].map(x => String(x[1]));
+    const r = calcular(textos, modo, k, A);
+    const nombreEst = estacion === "CAM" ? "Estación Camarones (Azcapotzalco), 2024" : "Estación CCA (Ciudad Universitaria), 2024";
+    const titulo = modo === "sturges" ? "Distribución de PM2.5 · regla de Sturges" : `Distribución de PM2.5 · k = ${r.k}, A = ${fmt(r.A, r.s, r.d)}`;
+    try { await document.fonts.ready; } catch (e) {}
+    const cv = dibujar(r, VARIABLE + " · " + nombreEst, titulo);
+    tablas[clave] = { r, img: cv.toDataURL("image/jpeg", 0.92), w: cv.width, h: cv.height, titulo, nombreEst };
+    return tablas[clave];
+  }
+
+  function mostrar(n, t) {
+    $("pasos" + n).innerHTML = pasosHTML(t.r);
+    $("img" + n).src = t.img;
+    $("res" + n).hidden = false;
+  }
+
+  $("btnT1").addEventListener("click", async () => { mostrar(1, await construirTabla("t1", "CAM", "sturges")); guardar(); });
+  $("btnT3").addEventListener("click", async () => { mostrar(3, await construirTabla("t3", "CCA", "sturges")); guardar(); });
+  $("btnT2").addEventListener("click", async () => {
+    const m = $("msg2"); m.hidden = true;
+    try {
+      const t = await construirTabla("t2", "CAM", "propio", $("k2").value, $("a2").value);
+      mostrar(2, t);
+      if (t.r.fuera > 0) {
+        m.textContent = `Con k = ${t.r.k} y A = ${fmt(t.r.A, t.r.s, t.r.d)}, ${t.r.fuera} ${t.r.fuera === 1 ? "dato queda" : "datos quedan"} fuera de los intervalos. Aumenta k o A.`;
+        m.hidden = false;
+      }
+      guardar();
+    } catch (e) { m.textContent = e.message; m.hidden = false; }
+  });
+
+  // Listas de datos ordenados
+  const ordenados = (est) => DATOS[est].map(x => x[1]).sort((a, b) => a - b).join(", ");
+  $("lista1").textContent = ordenados("CAM");
+  $("lista3").textContent = ordenados("CCA");
+
+  // ---------- Guardado en el celular ----------
+  const CLAVE = "lab-estadistica-pm25-v1";
+  const CAMPOS = ["nombre", "grupo", "equipo", "k2", "a2"].concat(Array.from({ length: 18 }, (_, i) => "q" + (i + 1)));
+  function guardar() {
+    const s = {};
+    CAMPOS.forEach(id => { s[id] = $(id).value; });
+    s.hechas = { t1: !!tablas.t1, t2: !!tablas.t2, t3: !!tablas.t3 };
+    try { localStorage.setItem(CLAVE, JSON.stringify(s)); $("estado").textContent = "Guardado en este celular."; } catch (e) {}
+    actualizarEstado();
+  }
+  async function cargar() {
+    let s = null;
+    try { s = JSON.parse(localStorage.getItem(CLAVE) || "null"); } catch (e) {}
+    if (!s) return;
+    CAMPOS.forEach(id => { if (s[id] != null) $(id).value = s[id]; });
+    if (s.hechas) {
+      if (s.hechas.t1) mostrar(1, await construirTabla("t1", "CAM", "sturges"));
+      if (s.hechas.t3) mostrar(3, await construirTabla("t3", "CCA", "sturges"));
+      if (s.hechas.t2 && $("k2").value && $("a2").value) { try { mostrar(2, await construirTabla("t2", "CAM", "propio", $("k2").value, $("a2").value)); } catch (e) {} }
+    }
+    actualizarEstado();
+  }
+  let temporizador = null;
+  CAMPOS.forEach(id => $(id).addEventListener("input", () => { clearTimeout(temporizador); temporizador = setTimeout(guardar, 400); }));
+
+  function actualizarEstado() {
+    const resp = Array.from({ length: 18 }, (_, i) => $("q" + (i + 1)).value.trim()).filter(Boolean).length;
+    const nt = ["t1", "t2", "t3"].filter(k => tablas[k]).length;
+    $("estado").textContent = `Llevas ${resp} de 18 respuestas y ${nt} de 3 tablas. Tu avance se guarda en este celular.`;
+  }
+
+  // ---------- PDF ----------
+  const PREGUNTAS = {};
+  document.querySelectorAll(".q label").forEach(l => { PREGUNTAS[l.htmlFor] = l.innerText.replace(/\s+/g, " ").trim().replace(/^(\d+)\.\s*/, "$1. "); });
+
+  function generarPDF() {
+    const msg = $("msgPDF"); msg.hidden = true;
+    if (!window.jspdf) { msg.className = "msg warn"; msg.textContent = "No se pudo cargar el generador de PDF. Revisa tu conexión a internet y recarga la página (tus respuestas no se pierden)."; msg.hidden = false; return; }
+    const nombre = $("nombre").value.trim();
+    if (!nombre) { msg.className = "msg warn"; msg.textContent = "Escribe tu nombre al inicio de la página antes de descargar."; msg.hidden = false; $("nombre").focus(); return; }
+    const faltan = ["t1", "t2", "t3"].filter(k => !tablas[k]);
+    if (faltan.length) { msg.className = "msg warn"; msg.textContent = "Te falta construir " + faltan.length + (faltan.length === 1 ? " tabla" : " tablas") + ". Construye las tres antes de descargar."; msg.hidden = false; return; }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: "mm", format: "letter" });
+    const W = 215.9, H = 279.4, M = 18, ancho = W - 2 * M;
+    let y = M;
+    const navy = [31, 56, 100], gris = [90, 101, 120], tinta = [27, 36, 51];
+    const salto = (alto) => { if (y + alto > H - M) { doc.addPage(); y = M; } };
+    // Las fuentes básicas del PDF no traen µ ni ³: se escriben como ug/m3
+    const limpiar = (s) => s.replace(/µg\/m³/g, "ug/m3").replace(/µ/g, "u").replace(/³/g, "3").replace(/²/g, "2")
+      .replace(/[\u2018\u2019]/g, "'").replace(/[\u201C\u201D]/g, '"').replace(/\u2212/g, "-")
+      .replace(/[^\x00-\xFF\u2014\u2013\u2026\u20AC]/g, "?");
+    const texto = (t, tam = 10.5, estilo = "normal", color = tinta, interlineado = 1.35) => {
+      t = limpiar(t);
+      doc.setFont("helvetica", estilo); doc.setFontSize(tam); doc.setTextColor(...color);
+      const lineas = doc.splitTextToSize(t, ancho);
+      const h = tam * 0.3528 * interlineado;
+      lineas.forEach(l => { salto(h); doc.text(l, M, y + h * 0.8); y += h; });
+    };
+    const espacio = (mm) => { y += mm; };
+    const altoImg = (tb) => ancho * tb.h / tb.w;
+    const titulo = (t, siguiente = 20) => { espacio(3); salto(12 + siguiente); doc.setFillColor(...navy); doc.rect(M, y, ancho, 8, "F"); doc.setFont("helvetica", "bold"); doc.setFontSize(11.5); doc.setTextColor(255, 255, 255); doc.text(t, M + 3, y + 5.6); y += 11; };
+    const respuesta = (id) => {
+      texto(PREGUNTAS[id], 10, "bold", navy);
+      const r = $(id).value.trim();
+      texto(r || "(sin respuesta)", 10.5, r ? "normal" : "italic", r ? tinta : gris);
+      espacio(3);
+    };
+    const imagen = (t) => {
+      const h = ancho * t.h / t.w;
+      salto(h + 4);
+      doc.addImage(t.img, "JPEG", M, y, ancho, h);
+      y += h + 4;
+    };
+
+    // Encabezado
+    texto("LABORATORIO DE ESTADÍSTICA · DATOS AGRUPADOS", 8.5, "bold", gris);
+    texto("¿Qué tan limpio es el aire que respiramos en Azcapotzalco?", 16, "bold", navy, 1.2);
+    espacio(2);
+    const fecha = new Date().toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" });
+    texto(`Nombre: ${nombre}`, 11, "normal");
+    texto(`Grupo: ${$("grupo").value.trim() || "—"}     Equipo: ${$("equipo").value.trim() || "—"}     Fecha: ${fecha}`, 11, "normal");
+    espacio(1);
+    doc.setDrawColor(...gris); doc.setLineWidth(0.3); doc.line(M, y, W - M, y); espacio(3);
+
+    titulo("Momento 1. Contexto");
+    ["q1", "q2", "q3", "q4", "q5", "q6", "q7"].forEach(respuesta);
+
+    titulo("Momento 2. Tabla con la regla de Sturges (Camarones)", altoImg(tablas.t1));
+    imagen(tablas.t1);
+    ["q8", "q9", "q10", "q11", "q12"].forEach(respuesta);
+
+    titulo("Momento 3. Mi propia tabla (Camarones)", altoImg(tablas.t2));
+    imagen(tablas.t2);
+    ["q13", "q14"].forEach(respuesta);
+
+    titulo("Momento 4. Norte contra sur (CCA)", altoImg(tablas.t3));
+    imagen(tablas.t3);
+    ["q15", "q16", "q17"].forEach(respuesta);
+
+    titulo("Reflexión");
+    respuesta("q18");
+
+    // Pie en cada página
+    const total = doc.getNumberOfPages();
+    for (let p = 1; p <= total; p++) {
+      doc.setPage(p); doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(...gris);
+      doc.text("Datos: SIMAT, Ciudad de México, 2024 · Laboratorio de Estadística, CCH-UNAM", M, H - 8);
+      doc.text(`Página ${p} de ${total}`, W - M, H - 8, { align: "right" });
+    }
+
+    const archivo = "PM25_" + nombre.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9]+/g, "_").replace(/^_|_$/g, "") + ".pdf";
+    doc.save(archivo);
+    msg.className = "msg ok"; msg.textContent = "Listo: se descargó " + archivo + ". Súbelo a Classroom o envíalo como te indique tu profesor."; msg.hidden = false;
+  }
+  $("btnPDF").addEventListener("click", generarPDF);
+
+  cargar();
+  actualizarEstado();
+})();
+</script>
+
+</body>
+</html>
